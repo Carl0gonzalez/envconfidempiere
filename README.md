@@ -22,9 +22,10 @@ Este documento explica cómo **cargar variables de entorno solo al entrar en** `
 ## 🚀 Inicio rápido (TL;DR)
 1. Instala y engancha `direnv` al shell (zsh o bash).
 2. Crea `/.envrc` dentro de `/home/user/idempiere12` con JAVA 17, Maven y Eclipse del proyecto.
-3. `direnv allow` para autorizar el archivo.
-4. Verifica con `java -version` / `mvn -version` **dentro** de la carpeta.
-5. Compila iDempiere: `mvn -U -V clean verify` desde `sources/idempiere`.
+3. **(Nuevo)** Deja el **repositorio local de Maven** dentro del proyecto (ver §3.5).
+4. `direnv allow` para autorizar el archivo.
+5. Verifica con `java -version` / `mvn -version` **dentro** de la carpeta.
+6. Compila iDempiere: `mvn -U -V clean verify` desde `sources/idempiere`.
 
 ---
 
@@ -95,6 +96,12 @@ if [[ -z "$JAVA_HOME" || ! -x "$JAVA_HOME/bin/java" ]]; then
   exit 1
 fi
 
+# --- Maven repo local dentro del proyecto (recomendado) ---
+export MVN_LOCAL_REPO="$BASE/.m2/repository"
+mkdir -p "$MVN_LOCAL_REPO"
+# Forzar el repo local para todos los builds del proyecto (sin tocar ~/.m2)
+export MAVEN_OPTS="${MAVEN_OPTS:-} -Dmaven.repo.local=$MVN_LOCAL_REPO"
+
 # PATH locales primero (función PATH_add es de direnv stdlib)
 PATH_add "$JAVA_HOME/bin"
 PATH_add "$MAVEN_HOME/bin"
@@ -111,6 +118,45 @@ direnv allow
 ```
 
 Cada vez que **entres** a `/home/user/idempiere12` (o subcarpetas) se cargarán estas variables; al **salir**, se descargarán automáticamente.
+
+---
+
+## 3.5) Mantener el **repositorio local de Maven** en el proyecto (evitar `~/.m2`)
+
+### Opción A — por comando (rápida)
+```bash
+mvn -Dmaven.repo.local="$PWD/.m2/repository" clean verify
+```
+> Solo afecta a ese comando. Útil para pruebas puntuales.
+
+### Opción B — por proyecto (persistente) con `.mvn/maven.config`
+```bash
+mkdir -p .mvn
+printf -- "-Dmaven.repo.local=.m2/repository\n" > .mvn/maven.config
+```
+Ahora basta con:
+```bash
+mvn clean verify
+```
+> Maven (3.3.1+) lee automáticamente `.mvn/maven.config` en el directorio del proyecto.
+
+### Opción C — vía `.envrc` (ideal si ya usas `direnv`)
+Incluida en el snippet del §3: define `MVN_LOCAL_REPO="$BASE/.m2/repository"` y extiende `MAVEN_OPTS` con `-Dmaven.repo.local=$MVN_LOCAL_REPO`.
+
+#### Verificar dónde está apuntando Maven
+```bash
+mvn -q help:evaluate -Dexpression=settings.localRepository -DforceStdout
+# Salida esperada (ejemplo):
+/home/user/idempiere12/.m2/repository
+```
+
+> **Nota Tycho/P2**: al fijar `maven.repo.local` al proyecto, las cachés de Tycho/p2 vivirán dentro de `./.m2/repository` (por ejemplo `./.m2/repository/.cache/tycho` y `./.m2/repository/p2`).
+
+### Alternativa extrema — mover todo el “home” de Maven al proyecto
+```bash
+mvn -Duser.home="$PWD" clean verify
+```
+Esto hace que Maven busque `./.m2/settings.xml`, `./.m2/repository`, etc. **Más intrusivo**; normalmente con `-Dmaven.repo.local` es suficiente.
 
 ---
 
@@ -138,9 +184,15 @@ mvn -U -V clean verify
 ### Si aparece un error P2/Tycho (repositorios Eclipse/Jetty)
 Limpia cachés y reintenta:
 ```bash
+# Si usas repo local por proyecto:
+rm -rf ./.m2/repository/.cache/tycho ./.m2/repository/p2
+
+# Si usas el ~/.m2 global:
 rm -rf ~/.m2/repository/.cache/tycho ~/.m2/repository/p2
+
 # (opcional) si persiste, limpiar Jetty:
-rm -rf ~/.m2/repository/org/eclipse/jetty
+rm -rf ~/.m2/repository/org/eclipse/jetty ./.m2/repository/org/eclipse/jetty
+
 mvn -U -V clean verify
 ```
 
@@ -205,7 +257,7 @@ PROMPT_COMMAND="__update_ps1;${PROMPT_COMMAND}"
 | Problema | Causa probable | Solución |
 |---|---|---|
 | `mvn` usa Java 11 | `JAVA_HOME`/`PATH` no apuntan a 17 | Valida `java -version`/`mvn -version` y corrige `JAVA_HOME` en `.envrc`; `direnv reload` |
-| Error P2/Tycho/Jetty | Caché P2/tycho inconsistente | Borra `~/.m2/repository/.cache/tycho` y `~/.m2/repository/p2`; ejecuta `mvn -U` |
+| Error P2/Tycho/Jetty | Caché P2/tycho inconsistente | Borra `./.m2/repository/.cache/tycho` y `./.m2/repository/p2` (o `~/.m2/...` si usas global); ejecuta `mvn -U` |
 | No se carga entorno | `direnv` no está enganchado o falta `allow` | Verifica `eval "$(direnv hook …)"` en tu shell y ejecuta `direnv allow` en `/home/user/idempiere12` |
 
 ---
@@ -218,4 +270,4 @@ PROMPT_COMMAND="__update_ps1;${PROMPT_COMMAND}"
 
 ---
 
-🧩 **Listo**: al trabajar dentro de `/home/user/idempiere12` tendrás **Java 17**, **Maven 3.9.11** y **Eclipse** locales, y tus builds de **iDempiere 12** quedarán totalmente **aislados** del entorno global.
+🧩 **Listo**: al trabajar dentro de `/home/user/idempiere12` tendrás **Java 17**, **Maven 3.9.11** y **Eclipse** locales, y tus builds de **iDempiere 12** quedarán totalmente **aislados** del entorno global, con el **repositorio de Maven** también aislado dentro del proyecto.

@@ -49,8 +49,8 @@
 │  ├─ idempiere/                  # Código iDempiere (branch release-12)
 │  └─ idempiere-target-platform-plugin/
 ├─ plugins/
-│  ├─ com.cds.intcomex/
-│  └─ com.cds.intcomex.trax/com.cds.intcomex.trax/
+│  ├─ com.xxx.xxxxx/
+│  └─ com.xxx.xxxxx/com.xxx.xxxxx/
 ├─ workspace-12/                  # Workspace de Eclipse
 ├─ .m2/                           # Repo Maven aislado
 │  └─ settings.xml
@@ -233,8 +233,8 @@ direnv allow
 cd /home/user/idempiere12/sources/idempiere-target-platform-plugin
 
 # Ejemplos:
-./plugin-builder ../plugins/com.cds.intcomex -Drevision=12.0.0
-./plugin-builder ../plugins/com.cds.intcomex.trax/com.cds.intcomex.trax -Drevision=12.0.0
+./plugin-builder ../plugins/com.xxxxx -Drevision=12.0.0
+./plugin-builder ../plugins/com.xxxxx/com.xxxxx -Drevision=12.0.0
 ```
 
 - Gracias al `PATH` y a `.mvn/maven.config`, `plugin-builder` utilizará:

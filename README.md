@@ -1,65 +1,99 @@
-# 🚧 Entorno aislado para iDempiere 12 en Ubuntu 22.04 (zsh/bash)  
+<div align="center">
 
-> **Objetivo**: Mantener **todas** las variables y configuraciones (Java 17, Maven 3.9.11, Eclipse, repositorio Maven) **aisladas** dentro de `~/idempiere12`, sin “ensuciar” tu `$HOME` global.
+# 🧩 iDempiere 12 — Entorno **Aislado** (Ubuntu 22.04, zsh/bash)
+
+**Objetivo**: Ejecutar iDempiere 12, Maven 3.9.11, Java 17 y Eclipse  
+**sin tocar el HOME global**, todo dentro de `~/idempiere12`.
+
+</div>
 
 ---
 
-## 📁 Estructura recomendada de carpetas
+## 📌 Índice
+
+- [✨ Vista rápida](#-vista-rápida)
+- [📁 Estructura de carpetas](#-estructura-de-carpetas)
+- [🧰 Requisitos](#-requisitos)
+- [🌳 .envrc (direnv)](#-envrc-direnv)
+- [📦 Maven aislado: `.m2` y `.mvn`](#-maven-aislado-m2-y-mvn)
+- [🧪 Pruebas rápidas](#-pruebas-rápidas)
+- [🧠 Eclipse con entorno aislado](#-eclipse-con-entorno-aislado)
+- [🧱 plugin-builder con entorno aislado](#-plugin-builder-con-entorno-aislado)
+- [🧯 Troubleshooting](#-troubleshooting)
+- [✅ Checklist final](#-checklist-final)
+- [🧾 Apéndice: comandos útiles](#-apéndice-comandos-útiles)
+
+---
+
+## ✨ Vista rápida
+
+| Componente | Versión / Ruta | Notas |
+|---|---|---|
+| **Java** | OpenJDK **17** (`/usr/lib/jvm/java-17-openjdk-amd64`) | Requerido por iDempiere 12 |
+| **Maven** | **3.9.11** (`/home/user/idempiere12/apache-maven-3.9.11`) | Aislado en la carpeta del proyecto |
+| **Eclipse** | Carpeta portable `~/idempiere12/eclipse` | Sin instalar, hereda variables |
+| **Repo Maven** | `~/idempiere12/.m2/repository` | No usa `~/.m2` global |
+| **Workspace** | `~/idempiere12/workspace-12` | Separado del resto |
+
+> **Tip**: Siempre **abre la terminal dentro de `~/idempiere12`**. Así `direnv` aplica el entorno automáticamente.
+
+---
+
+## 📁 Estructura de carpetas
 
 ```text
 /home/user/idempiere12
 ├─ apache-maven-3.9.11/           # Maven local (bin incluidos)
-├─ eclipse/                       # Eclipse descargado (sin instalar)
+├─ eclipse/                       # Eclipse portable (descargado)
 ├─ sources/
-│  ├─ idempiere/                  # Código de iDempiere (release-12)
+│  ├─ idempiere/                  # Código iDempiere (branch release-12)
 │  └─ idempiere-target-platform-plugin/
 ├─ plugins/
 │  ├─ com.cds.intcomex/
 │  └─ com.cds.intcomex.trax/com.cds.intcomex.trax/
 ├─ workspace-12/                  # Workspace de Eclipse
-├─ .m2/                           # Repositorio Maven (aislado)
+├─ .m2/                           # Repo Maven aislado
 │  └─ settings.xml
-├─ .mvn/                          # Configuración por-repo de Maven
+├─ .mvn/                          # Config Maven por-repo (fallback)
 │  └─ maven.config
 └─ .envrc                         # Variables de entorno (direnv)
 ```
 
-> Usa **`/home/user`** en lugar de tu usuario real para no exponerlo. Sustituye `user` por lo que corresponda en **tu** máquina.
+> Usa **`/home/user`** en la documentación; así evitas exponer tu usuario real.
 
 ---
 
-## 🧰 Requisitos (una sola vez)
+## 🧰 Requisitos
 
-### 1) Instala y activa **direnv**
-
-```bash
-sudo apt-get update && sudo apt-get install -y direnv
-```
-
-**zsh** – añade a `~/.zshrc`:
-```bash
-eval "$(direnv hook zsh)"
-```
-
-**bash** – añade a `~/.bashrc`:
-```bash
-eval "$(direnv hook bash)"
-```
-
-> Cierra y vuelve a abrir la terminal, o ejecuta `source ~/.zshrc` / `source ~/.bashrc`.
+1. **Instalar direnv**
+   ```bash
+   sudo apt-get update && sudo apt-get install -y direnv
+   ```
+2. **Hook de shell**
+   - **zsh** → añade a `~/.zshrc`:
+     ```bash
+     eval "$(direnv hook zsh)"
+     ```
+   - **bash** → añade a `~/.bashrc`:
+     ```bash
+     eval "$(direnv hook bash)"
+     ```
+3. Recarga el shell:
+   ```bash
+   source ~/.zshrc  # o ~/.bashrc
+   ```
 
 ---
 
-## 🌳 Archivo `~//idempiere12/.envrc` (variables del entorno aislado)
+## 🌳 `.envrc` (direnv)
 
-Crea el archivo **`/home/user/idempiere12/.envrc`** con este contenido:
+Crea **`/home/user/idempiere12/.envrc`**:
 
 ```bash
-# === iDempiere 12 - Entorno aislado ===
-# Ruta raíz del entorno
+# === iDempiere 12 - Entorno Aislado ===
 export IDEMPIERE_ROOT="/home/user/idempiere12"
 
-# Java 17 del sistema (Ubuntu 22.04)
+# Java 17 del sistema
 export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
 
 # Maven local
@@ -71,33 +105,33 @@ export IDEMPIERE_HOME="$IDEMPIERE_ROOT/sources/idempiere"
 export ECLIPSE_HOME="$IDEMPIERE_ROOT/eclipse"
 export ECLIPSE_WORKSPACE="$IDEMPIERE_ROOT/workspace-12"
 
-# Maven (repo & settings) – aislados aquí dentro
+# Maven (repo & settings) — aislados
 export MAVEN_USER_SETTINGS="$IDEMPIERE_ROOT/.m2/settings.xml"
 export MAVEN_LOCAL_REPO="$IDEMPIERE_ROOT/.m2/repository"
 
-# PATH: prioriza Maven local
+# PATH (prioriza Maven local)
 export PATH="$MAVEN_HOME/bin:$PATH"
 
-# Alias: garantiza repo/settings locales aunque algún build ignore .mvn
+# Alias: fuerza settings/repo locales
 alias mvn='"$MAVEN_HOME/bin/mvn" -s "$MAVEN_USER_SETTINGS" -Dmaven.repo.local="$MAVEN_LOCAL_REPO"'
 
 # Calidad de vida para builds/headless
 export JAVA_TOOL_OPTIONS="-Djava.awt.headless=true"
 ```
 
-**Activa las variables del entorno (una vez por carpeta):**
+**Activa** (una sola vez por carpeta):
 ```bash
 cd /home/user/idempiere12
 direnv allow
 ```
 
-> Verás avisos como `PS1 cannot be exported` – **es normal** y no afecta.
+> Verás `PS1 cannot be exported` — **es normal**.
 
 ---
 
 ## 📦 Maven aislado: `.m2` y `.mvn`
 
-### 1) Crea `~//idempiere12/.m2/settings.xml`
+### 1) `~/idempiere12/.m2/settings.xml`
 
 ```bash
 mkdir -p /home/user/idempiere12/.m2
@@ -108,9 +142,9 @@ cat > /home/user/idempiere12/.m2/settings.xml << 'XML'
   <!-- Repositorio local aislado -->
   <localRepository>/home/user/idempiere12/.m2/repository</localRepository>
 
-  <!-- Opcional: mirrors/proxy/perfiles si los necesitas -->
+  <!-- Mirrors/Proxy/Profiles opcionales -->
   <mirrors>
-    <!-- Ejemplo de mirror (descomenta y ajusta si corresponde)
+    <!--
     <mirror>
       <id>central-fast</id>
       <mirrorOf>central</mirrorOf>
@@ -122,9 +156,10 @@ cat > /home/user/idempiere12/.m2/settings.xml << 'XML'
 XML
 ```
 
-### 2) Crea `.mvn/maven.config` **en cada repo que compiles con `mvn`**
+### 2) `.mvn/maven.config` en **cada** repo que compiles
 
-Maven sólo lee `.mvn/maven.config` desde el **raíz del proyecto** que estás compilando. Por eso, crea este archivo en **cada** repo relevante, por ejemplo:
+> Maven lee `.mvn/maven.config` **desde el raíz del proyecto**.  
+> Añádelo en *todos* los repos que uses (iDempiere, target-platform, tus plugins):
 
 ```bash
 for p in \
@@ -137,42 +172,37 @@ do
   cat > "$p/.mvn/maven.config" << 'CFG'
 -s /home/user/idempiere12/.m2/settings.xml
 -Dmaven.repo.local=/home/user/idempiere12/.m2/repository
-# Opcionalmente:
+# Opcional:
 # -Dtycho.localArtifacts=ignore
 CFG
 done
 ```
 
-> Con esto, **aunque no uses el alias** `mvn` del `.envrc`, los builds seguirán usando **tu repo local aislado** y **settings.xml**.
-
 ---
 
-## 🧪 Probar desde terminal
+## 🧪 Pruebas rápidas
 
 ```bash
-# siempre arranca desde la carpeta del entorno
+# 1) Entra al entorno
 cd /home/user/idempiere12
-direnv allow        # solo la primera vez o si cambiaste .envrc
+direnv allow    # solo si cambiaste .envrc
 
-# confirman versiones y rutas
-which mvn           # => /home/user/idempiere12/apache-maven-3.9.11/bin/mvn
-mvn -v              # Apache Maven 3.9.11, Java version: 17
+# 2) Verifica Maven/Java del entorno
+which mvn       # /home/user/idempiere12/apache-maven-3.9.11/bin/mvn
+mvn -v          # Maven 3.9.11, Java 17
 
-# build de iDempiere (ejemplo)
+# 3) Build iDempiere (ejemplo)
 cd sources/idempiere
 mvn -DskipTests verify
 ```
 
-> Si ves que Maven usa `~/.m2` global, revisa:
-> - `which mvn` (debe ser el de `apache-maven-3.9.11/bin`)
-> - `mvn -X help:effective-settings | grep -A2 localRepository`
+> Si ves que usa `~/.m2` global: revisa `which mvn` y el contenido de `.mvn/maven.config` en el repo activo.
 
 ---
 
-## 💡 Eclipse usando el entorno aislado
+## 🧠 Eclipse con entorno aislado
 
-### Lanzar Eclipse **con** variables del entorno
-Siempre lánzalo desde la carpeta del entorno (para heredar `.envrc`):
+> **Siempre** lánzalo desde el entorno para heredar variables:
 
 ```bash
 cd /home/user/idempiere12
@@ -180,66 +210,78 @@ direnv allow
 "$ECLIPSE_HOME/eclipse" -data "$ECLIPSE_WORKSPACE" -vm "$JAVA_HOME/bin/java"
 ```
 
-### Preferencias dentro de Eclipse (m2e)
+**Configura dentro de Eclipse:**
 
-1. **Java → Installed JREs**  
-   - **Add… → Standard VM** → **JRE home**: `/usr/lib/jvm/java-17-openjdk-amd64`  
+1. **Java → Installed JREs**
+   - *Add… → Standard VM* → **JRE home**: `/usr/lib/jvm/java-17-openjdk-amd64`
    - Marcar como **Default**.
 
-2. **Maven → User Settings**  
-   - **User Settings**: `/home/user/idempiere12/.m2/settings.xml`  
-   - **Update Settings** / **Reindex**.  
-   - (Opcional) En el mismo `settings.xml` ya fijamos `<localRepository>…</localRepository>` para que m2e use `/home/user/idempiere12/.m2/repository`.
+2. **Maven → User Settings**
+   - **User Settings**: `/home/user/idempiere12/.m2/settings.xml`
+   - **Update Settings** y **Reindex**.
 
-3. **(Opcional) Run Configurations → Maven Build**  
-   - Para jobs específicos: pestaña **JRE** → **Alternate JRE** = **Java 17**.
-   - Pestaña **JRE** o **JRE HOME** no es necesaria si ya pusiste Java 17 por defecto.
+3. **(Opcional) Run Configurations → Maven Build**
+   - Pestaña **JRE** → **Alternate JRE** = **Java 17** (si no está por defecto).
 
-> **Nota**: Si Eclipse ya estaba abierto **sin** heredar `.envrc`, ciérralo y vuelve a abrirlo con el comando de arriba.
+> Si Eclipse se abrió fuera del entorno, ciérralo y relánzalo con el comando de arriba.
 
 ---
 
-## 🧱 `plugin-builder` con el entorno aislado
-
-Desde el terminal (ya dentro de `~/idempiere12` con `direnv` activo):
+## 🧱 `plugin-builder` con entorno aislado
 
 ```bash
 cd /home/user/idempiere12/sources/idempiere-target-platform-plugin
 
-# ejemplo: construir tu plugin con revision 12.0.0
+# Ejemplos:
+./plugin-builder ../plugins/com.cds.intcomex -Drevision=12.0.0
 ./plugin-builder ../plugins/com.cds.intcomex.trax/com.cds.intcomex.trax -Drevision=12.0.0
 ```
 
-> Gracias a `PATH` (Maven local primero) y a los `.mvn/maven.config` en cada repo, `plugin-builder` también usará **Java 17**, **Maven local** y **repo/settings aislados**.
+- Gracias al `PATH` y a `.mvn/maven.config`, `plugin-builder` utilizará:
+  - **Maven local** `apache-maven-3.9.11`
+  - **Java 17**
+  - **Repo/Settings** dentro de `~/idempiere12/.m2/`
 
 ---
 
-## 🧯 Troubleshooting rápido
+## 🧯 Troubleshooting
 
-- **Maven usa `~/.m2` global**  
-  - Verifica `which mvn` → debe apuntar a `apache-maven-3.9.11/bin/mvn` dentro del entorno.  
-  - Asegúrate de tener `.mvn/maven.config` en **cada** repo que compiles.
-
-- **Eclipse no toma Java 17**  
-  - Preferences → Java → Installed JREs → que JDK 17 esté **Default**.  
-  - Si hace falta, en cada *Run Configuration* usa **Alternate JRE** = 17.
-
-- **`direnv: PS1 cannot be exported`**  
-  - Es un aviso inofensivo. Ignóralo.
+| Síntoma / Log | Causa probable | Solución |
+|---|---|---|
+| `PS1 cannot be exported` (direnv) | Aviso inofensivo | Ignorar |
+| Maven usa `~/.m2` global | No heredó el alias/variables o falta `.mvn/maven.config` | Verifica `which mvn` y crea `.mvn/maven.config` en el repo activo |
+| Eclipse no usa Java 17 | JRE por defecto distinto | Preferences → **Java → Installed JREs** → setear **17** como Default |
+| `BUILD Version Error` al iniciar iDempiere | DB seed no coincide con versión | Reimporta seed correcto y ejecuta empaquetado/migraciones de 12.x |
+| `Could not find ... in p2` | Caché p2/tycho inconsistente | Elimina `~/.m2/.cache/tycho` **del entorno aislado** y recompila |
 
 ---
 
 ## ✅ Checklist final
 
-- [ ] `~/.zshrc` o `~/.bashrc` tiene el hook de direnv  
-- [ ] `/home/user/idempiere12/.envrc` creado y `direnv allow` aplicado  
-- [ ] `/home/user/idempiere12/.m2/settings.xml` con `<localRepository>…/idempiere12/.m2/repository</localRepository>`  
-- [ ] `.mvn/maven.config` presente en **cada repo** que compilas  
-- [ ] Eclipse lanzado desde `~/idempiere12` para heredar el entorno  
-- [ ] `which mvn` apunta al Maven local del entorno
+- [ ] Hook de `direnv` en `~/.zshrc`/`~/.bashrc`
+- [ ] `~/idempiere12/.envrc` creado y **`direnv allow`** aplicado
+- [ ] `~/idempiere12/.m2/settings.xml` con `<localRepository>…/idempiere12/.m2/repository</localRepository>`
+- [ ] `.mvn/maven.config` en **cada** repo que compiles
+- [ ] Eclipse lanzado con `-data "$ECLIPSE_WORKSPACE"` desde `~/idempiere12`
+- [ ] `which mvn` apunta a `apache-maven-3.9.11/bin/mvn` del entorno
 
 ---
 
-### 📝 Notas
-- Sustituye siempre `/home/user` por la ruta real de tu usuario si lo deseas, **pero mantener “user” es válido** y evita exponer tu username en documentación o scripts compartidos.
-- Puedes versionar **`.mvn/maven.config`** dentro de cada repo para que toda tu organización use el mismo repo Maven aislado cuando trabajen en este entorno.
+## 🧾 Apéndice: comandos útiles
+
+```bash
+# Ver settings efectivos (confirma repo local)
+mvn -X help:effective-settings | grep -A2 localRepository
+
+# Limpiar caché Tycho (SÓLO del entorno aislado)
+rm -rf /home/user/idempiere12/.m2/repository/.cache/tycho
+
+# Forzar Maven del entorno (si acaso)
+/home/user/idempiere12/apache-maven-3.9.11/bin/mvn -s /home/user/idempiere12/.m2/settings.xml \
+  -Dmaven.repo.local=/home/user/idempiere12/.m2/repository -v
+```
+
+---
+
+> ¿Quieres que agregue perfiles de proxy corporativo, mirrors o variables adicionales para PostgreSQL?  
+> Puedo dejar los bloques listos para copiar/pegar en `settings.xml` o en `.envrc`. 👌

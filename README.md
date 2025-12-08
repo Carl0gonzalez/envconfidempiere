@@ -299,10 +299,12 @@ cd <YOUR_PATH>/idempiere12
 direnv allow
 
 # Lanzar Eclipse (elige workspace)
-eclipse-choose
+/home/carlo/Documents/idempiere12/eclipse/eclipse \
+   -data @noDefault \
+  -configuration /home/carlo/Documents/idempiere12/.p2/configuration \
+  -Dosgi.instance.area.default=/home/carlo/Documents/idempiere12/workspace
 
-# Lanzar Eclipse (workspace del entorno)
-eclipse-here
+
 
 # Ver variables activas (panel)
 cd <YOUR_PATH>/idempiere12  # se imprime al entrar

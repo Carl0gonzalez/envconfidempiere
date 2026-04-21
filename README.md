@@ -1,33 +1,22 @@
 # ⚙️ envconfidempiere
 
-Repositorio enfocado en la **configuración de entorno para iDempiere**, pensado para organizar parámetros, servicios y ajustes de una instalación ERP.
+Repositorio orientado a la **configuración de entorno para iDempiere**, útil para centralizar parámetros y soporte de instalación ERP.
 
 ![iDempiere](https://img.shields.io/badge/iDempiere-ERP-0A7E8C)
 
----
+## Descripción
 
-## 📌 Objetivo
+Está pensado como apoyo para preparar ambientes de desarrollo, prueba o despliegue donde iDempiere requiere ajustes repetibles y más ordenados.
 
-Reducir el esfuerzo manual en la preparación de ambientes iDempiere y dejar una base reutilizable entre máquinas o proyectos.
+## Objetivo
 
-## 🧩 Qué incluye
+Reducir errores de configuración manual y dejar una base reutilizable para trabajar con iDempiere.
 
-- Scripts o archivos de soporte para configuración.
-- Base para entornos de desarrollo o prueba.
-- Enfoque reutilizable sobre ERP e infraestructura.
+## Uso
 
-## ▶️ Uso general
+Revisa los archivos de configuración o scripts del repositorio y adáptalos a tu entorno local.
 
-```bash
-git clone git@github.com:Carl0gonzalez/envconfidempiere.git
-cd envconfidempiere
-```
-
-## 💡 Valor del proyecto
-
-Ayuda a estandarizar ambientes y refuerza buenas prácticas de configuración técnica en iDempiere.
-
-## 👤 Autor
+## Autor
 
 **Carlo González**
 
